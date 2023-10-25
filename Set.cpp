@@ -85,22 +85,32 @@ cacheInfo * Set::addNewSlot(uint32_t tag) {
     return slotRes;
 }
 
-Slot* Set::evictSlot() {
+void Set::evictSlot() {
     if (evictStrat == "lru") {
         Slot *lruSlot = &slots[0];
-        for (Slot &slot : slots) {
+        for (Slot slot : slots) {
             if (slot.getAccessTimestamp() < lruSlot->getAccessTimestamp()) {
                 lruSlot = &slot;
             }
         }
-        return lruSlot;
+        for (int i = 0; i < slots.size(); i++) {
+            if (slots[i].getTag() == lruSlot->getTag()) {
+                slots.erase(slots.begin() + i);
+                break;
+            }
+        }
     } else { // Assuming "fifo"
         Slot *oldestSlot = &slots[0];
-        for (Slot &slot : slots) {
+        for (Slot slot : slots) {
             if (slot.getLoadTimestamp() < oldestSlot->getLoadTimestamp()) {
                 oldestSlot = &slot;
             }
         }
-        return oldestSlot;
+        for (int i = 0; i < slots.size(); i++) {
+            if (slots[i].getTag() == oldestSlot->getTag()) {
+                slots.erase(slots.begin() + i);
+                break;
+            }
+        }
     }
 }
