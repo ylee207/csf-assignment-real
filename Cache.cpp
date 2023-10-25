@@ -76,12 +76,7 @@ void Cache::store(unsigned int address, unsigned int tag, unsigned int index) {
     Set* set = sets[index];
     cacheInfo * foundSlot;
     foundSlot = set->findSlotByTag(tag, load);
-    if(!foundSlot->hit) {
-        if (isWriteAllocate) {
-            foundSlot = set->addNewSlot(tag);
-            foundSlot->bytesStored = numBytesPerBlock;
-        } 
-    }
+
     if (foundSlot->hit) {
         storeTotalHits++;
         totalCycles++;  // cost of accessing cache
@@ -97,7 +92,11 @@ void Cache::store(unsigned int address, unsigned int tag, unsigned int index) {
         }
     } else {
         storeTotalMisses++;
-        if (!isWriteAllocate) {
+        if (isWriteAllocate) {
+            foundSlot = set->addNewSlot(tag);
+            foundSlot->bytesStored = numBytesPerBlock;
+        } 
+        else {
             // Directly write to memory if no write-allocate
             totalCycles += (numBytesPerBlock / 4) * 100;
         }

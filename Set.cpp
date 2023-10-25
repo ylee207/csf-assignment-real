@@ -26,7 +26,7 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load) {
     unsigned count = 0;
     if (load) {
         for (Slot &slot : slots) {  //if it is hit
-            if (slot.getTag() == tag && slot.isValid()) {
+            if (slot.getTag() == tag ) {
                 slotRes->hit = true;
                 slotRes->bytesLoaded = numBytes;
                 // int prevTime = slot.getAccessTimestamp();
@@ -40,32 +40,39 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load) {
             }
             count++;
         }
+        if (count == maxBlocks) {
+            evictSlot(tag);
+            addNewSlot(tag);
+            return slotRes;
+         } else {
+            addNewSlot(tag);
+            slotRes->bytesLoaded = numBytes;
+            return slotRes;
+         }
+
     }
     if (!load) {
         for (Slot &slot : slots) {  //if it is hit
-            if (slot.getTag() == tag && slot.isValid()) {
+            if (slot.getTag() == tag) {
                 slotRes->hit = true;
                 slotRes->bytesLoaded = numBytes;
                 return slotRes;
             }
             count++;
         }
+
+        if (count == maxBlocks) {
+            evictSlot(tag);
+            return slotRes;
+         }
+        else {
+            //addNewSlot(tag);
+            return slotRes;
+        }
     }
 
     //if it is miss
-    if (count == maxBlocks) {
-        slotRes->hit = false;
-        evictSlot(tag);
-        return slotRes;
-
-    }
-    else {
-        slotRes->hit = false;
-        addNewSlot(tag);
-        slotRes->bytesLoaded = numBytes;
-        return slotRes;
-
-    }
+    
 }
 
 Slot* Set::findActualSlotByTag(uint32_t tag) {
@@ -88,7 +95,7 @@ cacheInfo * Set::addNewSlot(uint32_t tag) {
         Slot newSlot;
         newSlot.setTag(tag);
         newSlot.setValid(true);
-        newSlot.setLoadTimestamp(currtimeStamp++);
+        newSlot.setLoadTimestamp(currtimeStamp);
         //newSlot.setAccessTimestamp();
         slots.push_back(newSlot);
 
@@ -120,13 +127,16 @@ void Set::evictSlot(uint32_t tag) {
     } else { // Assuming "fifo"
         Slot *oldestSlot = &slots[0];
         for (Slot slot : slots) {
-            if (slot.getLoadTimestamp() > oldestSlot->getLoadTimestamp()) {
+            if (slot.getLoadTimestamp() < oldestSlot->getLoadTimestamp()) {
                 oldestSlot = &slot;
             }
         }
-        oldestSlot->setTag(tag);
-        oldestSlot->setValid(true);
-        oldestSlot->setLoadTimestamp(currtimeStamp);
+        for (int i = 0; i < slots.size(); i++) {
+            if (slots[i].getTag() == oldestSlot->getTag()) {
+                slots.erase(slots.begin() + i);
+                break;
+            }
+        }
 
     }
 }

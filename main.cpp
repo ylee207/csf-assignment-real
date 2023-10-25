@@ -97,11 +97,6 @@ int main(int argc, char* argv[]) {
 
     Cache cache(numSets, numBlocks, numBytesPerBlock, writeAllocateOption, writeThroughOption, lruOrFifo);
 
-    // The case for direct mapping.
-    if (numSets == 1) {
-        // cache.directMapping(address);
-        return 0;
-    }
 
     while (std::getline(cin, line)) {
         std::istringstream iss(line);
