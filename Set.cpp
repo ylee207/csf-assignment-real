@@ -3,9 +3,9 @@
 #include <ctime>
 
 Set::Set(bool isWriteAllocate, bool isWriteThrough, std::string& lruOrFifo, unsigned numBlocks, unsigned numBytesPerBlock) 
-    : evictStrat(lruOrFifo), 
-      writeAllocate(isWriteAllocate),
+    : writeAllocate(isWriteAllocate),
       writeThrough(isWriteThrough),
+      evictStrat(lruOrFifo),
       maxBlocks(numBlocks),
       numBytes(numBytesPerBlock),
       currtimeStamp(0)
@@ -41,7 +41,7 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load) {
             count++;
         }
         if (count == maxBlocks) {
-            evictSlot(tag);
+            evictSlot();
             addNewSlot(tag);
             return slotRes;
          } else {
@@ -62,7 +62,7 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load) {
         }
 
         if (count == maxBlocks) {
-            evictSlot(tag);
+            evictSlot();
             return slotRes;
          }
         else {
@@ -110,7 +110,7 @@ cacheInfo * Set::addNewSlot(uint32_t tag) {
     return slotRes;
 }
 
-void Set::evictSlot(uint32_t tag) {
+void Set::evictSlot() {
     if (evictStrat == "lru") {
         Slot *lruSlot = &slots[0];
         for (Slot slot : slots) {
@@ -118,7 +118,7 @@ void Set::evictSlot(uint32_t tag) {
                 lruSlot = &slot;
             }
         }
-        for (int i = 0; i < slots.size(); i++) {
+        for (long unsigned int i = 0; i < slots.size(); i++) {
             if (slots[i].getTag() == lruSlot->getTag()) {
                 slots.erase(slots.begin() + i);
                 break;
@@ -131,7 +131,7 @@ void Set::evictSlot(uint32_t tag) {
                 oldestSlot = &slot;
             }
         }
-        for (int i = 0; i < slots.size(); i++) {
+        for (long unsigned int i = 0; i < slots.size(); i++) {
             if (slots[i].getTag() == oldestSlot->getTag()) {
                 slots.erase(slots.begin() + i);
                 break;

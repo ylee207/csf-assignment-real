@@ -43,7 +43,7 @@ Cache::~Cache() {
     }
 }
 
-void Cache::load(unsigned int address, unsigned int tag, unsigned int index) {
+void Cache::load(unsigned int tag, unsigned int index) {
     totalLoads++;
     bool load = true;
     if (sets[index] == NULL) {
@@ -64,7 +64,7 @@ void Cache::load(unsigned int address, unsigned int tag, unsigned int index) {
     totalCycles += (foundSlot->getTotalBytes() / 4) * 100;
 }
 
-void Cache::store(unsigned int address, unsigned int tag, unsigned int index) {
+void Cache::store(unsigned int tag, unsigned int index) {
     totalStores++;
     bool load = false;
 

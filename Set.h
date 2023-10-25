@@ -15,7 +15,7 @@ public:
     cacheInfo * findSlotByTag(uint32_t tag, bool load);
     Slot* findActualSlotByTag(uint32_t tag);
     cacheInfo * addNewSlot(uint32_t tag);
-    void evictSlot(uint32_t tag);  // LRU or FIFO depending on what you choose
+    void evictSlot();  // LRU or FIFO depending on what you choose
     std::vector<Slot> slots;
 
 private:

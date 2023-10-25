@@ -82,12 +82,6 @@ int main(int argc, char* argv[]) {
     // designation for lru or fifo
     std::string lruOrFifo(argv[6]);
 
-    // Calculate the tagSize, setIndexSize, and the blockOffsetSize.
-    int blockOffsetSize = std::log2(numBytesPerBlock); 
-    int setIndexSize = std::log2(numSets);   
-    int tagSize = 32 - blockOffsetSize - setIndexSize;
-
-
     // Declaration for variables to store values from the memory trace file.
     string line;
     string operation;
@@ -101,12 +95,8 @@ int main(int argc, char* argv[]) {
     while (std::getline(cin, line)) {
         std::istringstream iss(line);
         if (iss >> operation >> std::hex >> address >> value) {
-            
-            unsigned int offset = address & ((1 << blockOffsetSize) - 1);
-            // unsigned int index = (address >> blockOffsetSize) & ((1 << setIndexSize) - 1);
-            // unsigned int tag = address >> (blockOffsetSize + setIndexSize);
-     unsigned tag = (address >> unsigned(log2(numBytesPerBlock)));
-    unsigned index = tag % numSets; 
+            unsigned tag = (address >> unsigned(log2(numBytesPerBlock)));
+            unsigned index = tag % numSets; 
 
 
             // Print entire address
@@ -117,9 +107,9 @@ int main(int argc, char* argv[]) {
             // cout << "\n" << endl;
 
             if (operation == "l") {
-                cache.load(address, tag, index);
+                cache.load(tag, index);
             } else if (operation == "s") {
-                cache.store(address, tag, index);
+                cache.store(tag, index);
             }
         } else {
             std::cerr << "Failed to parse line: " << line << endl;

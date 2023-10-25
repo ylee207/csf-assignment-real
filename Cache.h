@@ -34,9 +34,9 @@ public:
           const std::string& replacementPolicy); 
 
     ~Cache();
-    void load(unsigned int address, unsigned int tag, unsigned int index);
+    void load(unsigned int tag, unsigned int index);
 
-    void store(unsigned int address, unsigned int tag, unsigned int index);
+    void store(unsigned int tag, unsigned int index);
 
     void printStatistics() const;
 };
