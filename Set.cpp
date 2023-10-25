@@ -6,7 +6,8 @@ Set::Set(bool isWriteAllocate, bool isWriteThrough, std::string& lruOrFifo, unsi
       writeAllocate(isWriteAllocate),
       writeThrough(isWriteThrough),
       maxBlocks(numBlocks),
-      numBytes(numBytesPerBlock)
+      numBytes(numBytesPerBlock),
+      currtimeStamp(0)
 {
     
 }
@@ -46,6 +47,7 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load) {
         evictSlot();
     }
     addNewSlot(tag);
+    currtimeStamp++;
     slotRes->bytesLoaded = numBytes;
     return slotRes;
 }
@@ -66,21 +68,15 @@ cacheInfo * Set::addNewSlot(uint32_t tag) {
     slotRes->bytesLoaded = numBytes;
 
     // Check if there's a slot available or we need to evict
-    if (slots.size() < maxBlocks) {
+  
         Slot newSlot;
         newSlot.setTag(tag);
         newSlot.setValid(true);
-        newSlot.setLoadTimestamp(std::time(nullptr));
+        newSlot.setLoadTimestamp(currtimeStamp);
         newSlot.setAccessTimestamp(newSlot.getLoadTimestamp());
         slots.push_back(newSlot);
 
-    } else {
-        Slot *slotToReplace = evictSlot();
-        slotToReplace->setTag(tag);
-        slotToReplace->setValid(true);
-        slotToReplace->setLoadTimestamp(std::time(nullptr));
-        slotToReplace->setAccessTimestamp(slotToReplace->getLoadTimestamp());
-    }
+
 
     return slotRes;
 }

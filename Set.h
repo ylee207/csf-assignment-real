@@ -23,6 +23,7 @@ private:
     std::string& evictStrat; 
     unsigned maxBlocks;
     unsigned numBytes;
+    unsigned currtimeStamp;
 };
 
 #endif
