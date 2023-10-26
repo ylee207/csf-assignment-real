@@ -113,6 +113,7 @@ int main(int argc, char* argv[]) {
             }
         } else {
             std::cerr << "Failed to parse line: " << line << endl;
+            return 1;
         }
     }
 
