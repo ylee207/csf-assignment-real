@@ -25,7 +25,7 @@ int Set::findMaxTime() {
     return maxSlot.getAccessTimestamp();
 }
 
-cacheInfo* Set::findSlotByTag(uint32_t tag, bool load) {
+cacheInfo* Set::findSlotByTag(uint32_t tag, bool load, bool writeThrough, bool writeAllocate, unsigned * tc) {
     cacheInfo * slotRes = new cacheInfo();
     slotRes->hit = false;
     slotRes->bytesLoaded = 0;
@@ -35,46 +35,75 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load) {
     unsigned count = 0;
 
     if (load) {
-        for (Slot &slot : slots) {  // if it is hit
-            if (slot.getTag() == tag ) {
+        for (Slot &slot : slots) { 
+            // if it is hit
+            if (slot.getTag() == tag) {
                 slotRes->hit = true;
-                slotRes->bytesLoaded = numBytes;
                 slot.setAccessTimestamp(findMaxTime() + 1);
                 return slotRes;
             }
             count++;
         }
 
+        // if miss
         if (count == maxBlocks) {
-            int extraCycles = evictSlot();
-            slotRes->evictionCycles = extraCycles;
+            evictSlot(tc);
             addNewSlot(tag);
             return slotRes;
          } else {
             addNewSlot(tag);
-            slotRes->bytesLoaded = numBytes;
+            *tc += (numBytes / 4) * 100;
             return slotRes;
          }
-
     }
+    // store
     else {
-        for (Slot &slot : slots) {  //if it is hit
+        for (Slot &slot : slots) {
+            // if it is hit
             if (slot.getTag() == tag) {
+                if (!writeThrough) {
+                    slot.setDirty(true);
+                    *tc += 1;
+                }
+                if (writeThrough) {
+                    *tc += 100 + 1;
+                }
+
                 slotRes->hit = true;
-                slotRes->bytesLoaded = numBytes;
                 slot.setAccessTimestamp(findMaxTime() + 1);
                 return slotRes;
             }
             count++;
         }
 
+        if (!writeAllocate) {
+            slotRes->hit = false;
+            *tc += 100;
+        }
+        if (writeAllocate) { 
+            *tc += (numBytes / 4) * 100 + 1;
+        }
+
         if (count == maxBlocks) {
-            int extraCycles = evictSlot();
-            slotRes->evictionCycles = extraCycles;
+            bool isDirty = evictSlot(tc);
+            if (writeThrough) {
+                // Add for writeThrough?
+            } else {
+                if (isDirty) {
+                    *tc += (numBytes / 4) * 100;
+                }
+            }
             return slotRes;
          }
         else {
-            //addNewSlot(tag);
+            // Fix this part.
+            if (writeThrough) {
+                slotRes->bytesLoaded = numBytes;
+                slotRes->bytesStored = 4;
+            } else {
+                slotRes->bytesLoaded = numBytes;
+                slotRes->bytesStored = 0;
+            }
             return slotRes;
         }
     }
@@ -93,7 +122,7 @@ Slot* Set::findActualSlotByTag(uint32_t tag) {
 cacheInfo * Set::addNewSlot(uint32_t tag) {
     cacheInfo * slotRes = new cacheInfo();
     slotRes->hit = false;
-    slotRes->bytesLoaded = numBytes;
+    // slotRes->bytesLoaded = numBytes;
 
     Slot newSlot;
     newSlot.setTag(tag);
@@ -107,8 +136,8 @@ cacheInfo * Set::addNewSlot(uint32_t tag) {
 }
 
 
-int Set::evictSlot() {
-    int extraCycles = 0;
+bool Set::evictSlot(unsigned *tc) {
+    // int extraCycles = 0;
     if (evictStrat == "lru") {
         std::vector<Slot>::iterator lruIter = slots.begin();
         for (std::vector<Slot>::iterator iter = slots.begin(); iter != slots.end(); ++iter) {
@@ -117,11 +146,8 @@ int Set::evictSlot() {
             }
         }
 
-        if (lruIter->isDirty()) {
-            extraCycles = (numBytes / 4) * 100;
-        }
-
         slots.erase(lruIter);
+        return lruIter->isDirty();
     } else { // Assuming "fifo"
         std::vector<Slot>::iterator oldestIter = slots.begin();
         for (std::vector<Slot>::iterator iter = slots.begin(); iter != slots.end(); ++iter) {
@@ -129,12 +155,11 @@ int Set::evictSlot() {
                 oldestIter = iter;
             }
         }
-
         if (oldestIter->isDirty()) {
-            extraCycles = (numBytes / 4) * 100;
+            *tc += (numBytes / 4) * 100;
         }
 
         slots.erase(oldestIter);
+        return oldestIter->isDirty();
     }
-    return extraCycles;
 }

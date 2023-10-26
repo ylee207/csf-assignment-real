@@ -4,7 +4,7 @@
 using std::cout;
 using std::endl;
 
-Cache::Cache(int numSets, int numBlocks, int numBytesPerBlock, 
+Cache::Cache(int numSets, int numBlocks, int numBytesPerBlock,
              const std::string& writeAllocateOption, 
              const std::string& writeThroughOption, 
              const std::string& replacementPolicy)
@@ -52,16 +52,13 @@ void Cache::load(unsigned int tag, unsigned int index) {
     }
     
     Set* set = sets[index];
-    cacheInfo * foundSlot = set->findSlotByTag(tag, load);
-    // totalCycles += foundSlot->evictionCycles;
+    cacheInfo * foundSlot = set->findSlotByTag(tag, load, isWriteThrough, isWriteAllocate, &totalCycles);
     if (foundSlot->hit == true) { // hit
         loadTotalHits++;
     }
     else { // miss
         loadTotalMisses++;
-        totalCycles += (foundSlot->getTotalBytes() / 4) * 100;
     }
-    totalCycles++;
 }
 
 void Cache::store(unsigned int tag, unsigned int index) {
@@ -75,8 +72,7 @@ void Cache::store(unsigned int tag, unsigned int index) {
 
     Set* set = sets[index];
     cacheInfo * foundSlot;
-    foundSlot = set->findSlotByTag(tag, load);
-    totalCycles += foundSlot->evictionCycles;
+    foundSlot = set->findSlotByTag(tag, load, isWriteThrough, isWriteAllocate, &totalCycles);
 
     // If it's a hit
     if (foundSlot->hit) {
@@ -85,40 +81,22 @@ void Cache::store(unsigned int tag, unsigned int index) {
         // write-through
         if (isWriteThrough) {
             // Write to main memory immediately
-            totalCycles += (numBytesPerBlock / 4) * 100;
-            // totalCycles += 100;
-            totalCycles++;
         } else {
             // write-back
             Slot* slot = set->findActualSlotByTag(tag);
             if (slot) slot->setDirty(true);
-            totalCycles++;
         }
     // If it's a miss
     } else {
         storeTotalMisses++;
         if (isWriteAllocate) {
-            totalCycles += (numBytesPerBlock / 4) * 100;
             foundSlot = set->addNewSlot(tag);
-            foundSlot->bytesStored = numBytesPerBlock;
-            totalCycles++;
-            totalCycles += (numBytesPerBlock / 4) * 100;
-            totalCycles++;
             Slot* slot = set->findActualSlotByTag(tag);
             if (slot) slot->setDirty(true);
-
-            if (isWriteThrough) {
-                totalCycles += (numBytesPerBlock / 4) * 100 + 1;
-            }
-        }
-        else {
-            // Directly write to memory if no write-allocate
-            // Slot* slot = set->findActualSlotByTag(tag);
-            totalCycles += (numBytesPerBlock / 4) * 100;
         }
     }
 
-    // delete foundSlot;
+    delete foundSlot;
 }
 
 void Cache::printStatistics() const {
