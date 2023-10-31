@@ -37,9 +37,10 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load, bool writeThrough, bool w
     if (load) {
         for (Slot &slot : slots) { 
             // if it is hit
-            if (slot.getTag() == tag) {
+            if (slot.getTag() == tag && slot.isValid()) {
+                *tc += 1;
                 slotRes->hit = true;
-                slot.setAccessTimestamp(findMaxTime() + 1);
+                slot.setAccessTimestamp(currtimeStamp++);
                 return slotRes;
             }
             count++;
@@ -49,10 +50,11 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load, bool writeThrough, bool w
         if (count == maxBlocks) {
             evictSlot(tc);
             addNewSlot(tag);
+            *tc += (numBytes / 4) * 100 + 1;
             return slotRes;
          } else {
             addNewSlot(tag);
-            *tc += (numBytes / 4) * 100;
+            *tc += (numBytes / 4) * 100 + 1;
             return slotRes;
          }
     }
@@ -60,7 +62,7 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load, bool writeThrough, bool w
     else {
         for (Slot &slot : slots) {
             // if it is hit
-            if (slot.getTag() == tag) {
+            if (slot.getTag() == tag && slot.isValid()) {
                 if (!writeThrough) {
                     slot.setDirty(true);
                     *tc += 1;
@@ -70,42 +72,52 @@ cacheInfo* Set::findSlotByTag(uint32_t tag, bool load, bool writeThrough, bool w
                 }
 
                 slotRes->hit = true;
-                slot.setAccessTimestamp(findMaxTime() + 1);
+                slot.setAccessTimestamp(currtimeStamp++);
                 return slotRes;
             }
             count++;
         }
 
-        if (!writeAllocate) {
+        if (writeThrough) {
             slotRes->hit = false;
             *tc += 100;
         }
         if (writeAllocate) { 
-            *tc += (numBytes / 4) * 100 + 1;
+            if (count == maxBlocks) {
+                evictSlot(tc);
+                addNewSlot(tag);
+                *tc += (numBytes / 4) * 100 + 1;
+                return slotRes;
+            } else {
+                addNewSlot(tag);
+                *tc += (numBytes / 4) * 100 + 1;
+                return slotRes;
+            }
         }
 
-        if (count == maxBlocks) {
-            bool isDirty = evictSlot(tc);
-            if (writeThrough) {
-                // Add for writeThrough?
-            } else {
-                if (isDirty) {
-                    *tc += (numBytes / 4) * 100;
-                }
-            }
-            return slotRes;
-         }
-        else {
-            // Fix this part.
-            if (writeThrough) {
-                slotRes->bytesLoaded = numBytes;
-                slotRes->bytesStored = 4;
-            } else {
-                slotRes->bytesLoaded = numBytes;
-                slotRes->bytesStored = 0;
-            }
-            return slotRes;
-        }
+        // if (count == maxBlocks) {
+        //     bool isDirty = evictSlot(tc);
+        //     // if (writeThrough) {
+        //     //     // Add for writeThrough?
+        //     // } else {
+        //     //     if (isDirty) {
+        //     //         *tc += (numBytes / 4) * 100;
+        //     //     }
+        //     // }
+        //     return slotRes;
+        //  }
+        // else {
+        //     // Fix this part.
+        //     if (writeThrough) {
+        //         slotRes->bytesLoaded = numBytes;
+        //         slotRes->bytesStored = 4;
+        //     } else {
+        //         slotRes->bytesLoaded = numBytes;
+        //         slotRes->bytesStored = 0;
+        //     }
+        //     return slotRes;
+        // }
+        return slotRes;
     }
 }
 
@@ -122,7 +134,6 @@ Slot* Set::findActualSlotByTag(uint32_t tag) {
 cacheInfo * Set::addNewSlot(uint32_t tag) {
     cacheInfo * slotRes = new cacheInfo();
     slotRes->hit = false;
-    // slotRes->bytesLoaded = numBytes;
 
     Slot newSlot;
     newSlot.setTag(tag);
@@ -146,6 +157,10 @@ bool Set::evictSlot(unsigned *tc) {
             }
         }
 
+        if (!writeThrough && lruIter->isDirty()) {
+            *tc += (numBytes / 4) * 100;
+        }
+
         slots.erase(lruIter);
         return lruIter->isDirty();
     } else { // Assuming "fifo"
@@ -155,7 +170,7 @@ bool Set::evictSlot(unsigned *tc) {
                 oldestIter = iter;
             }
         }
-        if (oldestIter->isDirty()) {
+        if (!writeThrough && oldestIter->isDirty()) {
             *tc += (numBytes / 4) * 100;
         }
 

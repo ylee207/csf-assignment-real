@@ -78,22 +78,31 @@ void Cache::store(unsigned int tag, unsigned int index) {
     if (foundSlot->hit) {
         storeTotalHits++;
 
-        // write-through
-        if (isWriteThrough) {
-            // Write to main memory immediately
-        } else {
-            // write-back
-            Slot* slot = set->findActualSlotByTag(tag);
-            if (slot) slot->setDirty(true);
-        }
+        // // write-through
+        // if (isWriteThrough) {
+        //     // Write to main memory immediately
+        // } else {
+        //     // write-back
+        //     Slot* slot = set->findActualSlotByTag(tag);
+        //     if (slot) slot->setDirty(true);
+        // }
     // If it's a miss
     } else {
         storeTotalMisses++;
-        if (isWriteAllocate) {
-            foundSlot = set->addNewSlot(tag);
-            Slot* slot = set->findActualSlotByTag(tag);
-            if (slot) slot->setDirty(true);
-        }
+        // if (isWriteAllocate) {
+        //     foundSlot = set->addNewSlot(tag);
+        //     Slot* slot = set->findActualSlotByTag(tag);
+        //     if (slot) slot->setDirty(true);
+        //     // bool load = true;
+        //     // if (sets[index] == nullptr) {
+        //     //     sets[index] = new Set(isWriteAllocate, isWriteThrough, 
+        //     //     lruOrFifo, numBlocks, numBytesPerBlock); 
+        //     // }
+            
+        //     // Set* set = sets[index];
+        //     // cacheInfo * foundSlot = set->findSlotByTag(tag, load, isWriteThrough, isWriteAllocate, &totalCycles);
+        //     // if (foundSlot) foundSlot->setDirty(true);
+        // }
     }
 
     delete foundSlot;
