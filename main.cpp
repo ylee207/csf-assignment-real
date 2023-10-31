@@ -27,8 +27,7 @@ std::string toBinary(unsigned int value, int width);
  * Main function for the program.
  */
 int main(int argc, char* argv[]) {
-    // command line arguments
-
+    // handling command line arguments
     if (argc != 7) {
         cerr << "Incorrect number of arguments" << endl;
         return 1;
@@ -88,23 +87,15 @@ int main(int argc, char* argv[]) {
     unsigned int address;
     int value;
     
-
+    // Declaring a cache
     Cache cache(numSets, numBlocks, numBytesPerBlock, writeAllocateOption, writeThroughOption, lruOrFifo);
 
-
+    // Read each line in .trace files and perform cache operations depending on load or store
     while (std::getline(cin, line)) {
         std::istringstream iss(line);
         if (iss >> operation >> std::hex >> address >> value) {
             unsigned tag = (address >> unsigned(log2(numBytesPerBlock)));
             unsigned index = tag % numSets; 
-
-
-            // Print entire address
-            // cout << "Address: " << toBinary(address, 32) << endl;
-            // cout << "Tag:     " << toBinary(tag, tagSize) << endl;
-            // cout << "Index:   " << toBinary(index, setIndexSize) << endl;
-            // cout << "Offset:  " << toBinary(offset, blockOffsetSize) << endl;
-            // cout << "\n" << endl;
 
             if (operation == "l") {
                 cache.load(tag, index);
@@ -117,6 +108,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // print the statistics for number of cycles, loads, stores, etc.
     cache.printStatistics();
     
     return 0;

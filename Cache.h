@@ -7,6 +7,7 @@
 #include <cstdint>
 #include "Set.h"
 
+// Cache class
 class Cache {
 private:
     std::vector<Set*> sets;
@@ -26,18 +27,24 @@ private:
     unsigned storeTotalHits;
     unsigned storeTotalMisses;
     unsigned totalCycles;
-    
+
 public:
+    // Cache constructor
     Cache(int numSets, int numBlocks, int numBytesPerBlock, 
           const std::string& writeAllocateOption, 
           const std::string& writeThroughOption, 
           const std::string& replacementPolicy); 
 
+    // Destructor for Cache class
     ~Cache();
+
+    // handles load operation
     void load(unsigned int tag, unsigned int index);
 
+    // handles store operation
     void store(unsigned int tag, unsigned int index);
 
+    // function to print out the statistics
     void printStatistics() const;
 };
 
